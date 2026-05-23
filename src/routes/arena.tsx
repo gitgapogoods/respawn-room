@@ -19,8 +19,12 @@ export const Route = createFileRoute('/arena')({
 
 function ArenaPage() {
   const { data: entries } = (useSuspenseQuery as any)(convexQuery((api as any).competitions.listCompetitionEntries, {}))
+  const { data: activeChallenge } = (useSuspenseQuery as any)(convexQuery((api as any).competitions.getActiveChallenge, {}))
+  const { data: challengeEntries } = (useSuspenseQuery as any)(convexQuery((api as any).competitions.listChallengeEntries, { challengeId: activeChallenge?._id || "" as any }))
+  
   const vote = useMutation((api as any).competitions.vote)
   const [votingId, setVotingId] = useState<string | null>(null)
+  const [tab, setTab] = useState<'global' | 'challenge'>('challenge')
 
   const handleVote = async (setupId: any) => {
     setVotingId(setupId)
@@ -32,6 +36,8 @@ function ArenaPage() {
       setVotingId(null)
     }
   }
+
+  const currentEntries = tab === 'global' ? entries : challengeEntries
 
   return (
     <div className="min-h-screen bg-dark-bg text-gray-200 font-sans pb-20">
@@ -75,18 +81,66 @@ function ArenaPage() {
            </p>
         </div>
 
-        {entries.length === 0 ? (
+        {activeChallenge && (
+          <div className="mb-20 p-8 sm:p-12 bg-gradient-to-br from-neon-purple/20 via-dark-card to-dark-card rounded-[3rem] border border-neon-purple/30 relative overflow-hidden group">
+             <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
+               <Trophy className="w-64 h-64 text-neon-purple" />
+             </div>
+             
+             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+               <div className="max-w-xl">
+                 <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-neon-purple rounded-lg">
+                      <Zap className="w-5 h-5 text-black" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neon-purple">Daily Mission</span>
+                 </div>
+                 <h2 className="font-orbitron text-3xl sm:text-4xl font-black text-white italic uppercase mb-4 tracking-tighter">
+                   {activeChallenge.title}
+                 </h2>
+                 <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] leading-relaxed">
+                   {activeChallenge.description}
+                 </p>
+               </div>
+               
+               <div className="flex flex-col items-end gap-2">
+                 <div className="text-[8px] font-black text-gray-500 uppercase tracking-[0.3em]">REWARD XP</div>
+                 <div className="text-white font-orbitron font-black text-2xl italic tracking-tighter">+500 CREDITS</div>
+                 <Link to="/redesign" className="mt-4 px-8 py-4 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-neon-purple hover:text-white transition-all shadow-xl">
+                    Accept Mission
+                 </Link>
+               </div>
+             </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-center gap-4 mb-12">
+           <button 
+             onClick={() => setTab('challenge')}
+             className={`px-8 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${tab === 'challenge' ? 'bg-neon-purple text-white shadow-[0_0_20px_rgba(188,19,254,0.3)]' : 'bg-white/5 text-gray-500 hover:text-white'}`}
+           >
+             Challenge Entries
+           </button>
+           <button 
+             onClick={() => setTab('global')}
+             className={`px-8 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${tab === 'global' ? 'bg-neon-cyan text-black shadow-[0_0_20px_rgba(0,243,255,0.3)]' : 'bg-white/5 text-gray-500 hover:text-white'}`}
+           >
+             Global Leaderboard
+           </button>
+        </div>
+
+        {currentEntries.length === 0 ? (
            <div className="py-32 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[3rem] bg-dark-card/30">
               <Zap className="w-16 h-16 text-gray-700 mb-6 animate-pulse" />
-              <h3 className="text-xl font-bold text-white mb-2 uppercase italic font-orbitron">Arena is Empty</h3>
-              <p className="text-gray-500 text-sm font-bold uppercase tracking-widest mb-8 text-center px-6">The first warrior has yet to step into the sector.</p>
+              <h3 className="text-xl font-bold text-white mb-2 uppercase italic font-orbitron">No Entries Yet</h3>
+              <p className="text-gray-500 text-sm font-bold uppercase tracking-widest mb-8 text-center px-6">Be the first to deploy your setup to this sector.</p>
               <Link to="/redesign" className="px-10 py-5 bg-neon-cyan text-black font-orbitron font-black text-sm uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(0,243,255,0.2)]">
                 Deploy Entry
               </Link>
            </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {entries.map((entry: any, index: number) => (
+            {currentEntries.map((entry: any, index: number) => (
               <div 
                 key={entry._id} 
                 className="group relative flex flex-col bg-dark-card border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-neon-purple/30 transition-all shadow-2xl"

@@ -39,9 +39,20 @@ export default defineSchema({
       hex: v.string(),
       description: v.string(),
     }))),
+    challengeId: v.optional(v.id("challenges")),
   }).index("by_status", ["status"])
     .index("by_user", ["userId"])
-    .index("by_competition", ["inCompetition", "voteCount"]),
+    .index("by_competition", ["inCompetition", "voteCount"])
+    .index("by_challenge", ["challengeId"]),
+
+  challenges: defineTable({
+    title: v.string(),
+    description: v.string(),
+    active: v.boolean(),
+    date: v.string(),
+    type: v.string(),
+  }).index("by_active", ["active"])
+    .index("by_date", ["date"]),
 
   votes: defineTable({
     userId: v.id("users"),

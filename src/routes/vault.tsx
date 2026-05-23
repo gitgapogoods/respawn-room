@@ -61,11 +61,16 @@ function VaultContent({ signOut }: { signOut: () => void }) {
     pilotRank: setups.length >= 5 ? 'COMMANDER' : setups.length >= 2 ? 'VETERAN' : 'ROOKIE'
   }
 
+  const { data: activeChallenge } = (useSuspenseQuery as any)(convexQuery((api as any).competitions.getActiveChallenge, {}))
+
   const handleEnterCompetition = async (e: React.MouseEvent, setupId: any) => {
     e.preventDefault()
     e.stopPropagation()
     try {
-      await enterCompetition({ setupId })
+      await enterCompetition({ 
+        setupId,
+        challengeId: activeChallenge?._id
+      })
       alert("MISSION SUCCESS: Entry registered in Setup Arena.")
     } catch (err: any) {
       alert(err.message)

@@ -122,10 +122,14 @@ function ResultsPage() {
     setTimeout(() => setCopied(null), 2000)
   }
 
+  const { data: activeChallenge } = (useSuspenseQuery as any)(convexQuery((api as any).competitions.getActiveChallenge, {}))
   const handleEnterArena = async () => {
     setEnteringArena(true)
     try {
-      await enterArena({ setupId })
+      await enterArena({ 
+        setupId,
+        challengeId: activeChallenge?._id
+      })
       navigate({ to: '/arena' })
     } catch (err: any) {
       alert(err.message)

@@ -2,8 +2,42 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+export const getActiveChallenge = query({
+  args: {},
+  returns: v.any(),
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("challenges")
+      .withIndex("by_active", (q) => q.eq("active", true))
+      .first();
+  },
+});
+
+export const listChallengeEntries = query({
+  args: { challengeId: v.id("challenges") },
+  returns: v.array(v.any()),
+  handler: async (ctx, args) => {
+    const entries = await ctx.db
+      .query("setups")
+      .withIndex("by_challenge", (q) => q.eq("challengeId", args.challengeId))
+      .order("desc")
+      .collect();
+
+    return Promise.all(
+      entries.map(async (s) => ({
+        ...s,
+        originalImageUrl: await ctx.storage.getUrl(s.originalImageId),
+        resultImageUrl: s.resultImageId ? await ctx.storage.getUrl(s.resultImageId) : null,
+      }))
+    );
+  },
+});
+
 export const enterCompetition = mutation({
-  args: { setupId: v.id("setups") },
+  args: { 
+    setupId: v.id("setups"),
+    challengeId: v.optional(v.id("challenges"))
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -20,6 +54,7 @@ export const enterCompetition = mutation({
 
     await ctx.db.patch(args.setupId, {
       inCompetition: true,
+      challengeId: args.challengeId,
       voteCount: setup.voteCount ?? 0,
     });
     return null;
