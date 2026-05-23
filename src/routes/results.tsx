@@ -499,10 +499,35 @@ function ResultsPage() {
                </div>
                <h3 className="font-orbitron text-2xl font-black text-white mb-4 italic uppercase">Lighting Config</h3>
                <p className="text-gray-400 mb-8">Get the exact RGB hex codes and gradient patterns for your smart lights.</p>
+
+               <div className="space-y-4">
+                 {setup.lightingConfig?.map((config: any, i: number) => (
+                   <div key={i} className="flex items-center justify-between p-4 bg-black/40 rounded-2xl border border-white/5 group/color">
+                      <div className="flex items-center gap-4">
+                         <div
+                           className="w-10 h-10 rounded-xl shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10"
+                           style={{ backgroundColor: config.hex, boxShadow: `0 0 20px ${config.hex}33` }}
+                         />
+                         <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-white">{config.name}</div>
+                            <div className="text-[10px] text-gray-500 font-bold uppercase">{config.hex}</div>
+                         </div>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(config.hex, `hex-${i}`)}
+                        className="text-[10px] font-black uppercase tracking-widest text-neon-purple hover:text-white transition-colors"
+                      >
+                        {copied === `hex-${i}` ? <Check className="w-3 h-3" /> : 'Copy Hex'}
+                      </button>
+                   </div>
+                 ))}
+                 {!setup.lightingConfig && (
+                    <div className="text-[10px] font-black text-gray-600 uppercase tracking-widest text-center py-4 border-2 border-dashed border-white/5 rounded-2xl">
+                      Configuration Syncing...
+                    </div>
+                 )}
+               </div>
              </div>
-             <button className="w-fit px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold uppercase text-xs tracking-widest flex items-center gap-2 transition-all">
-               Coming Soon <Zap className="w-3 h-3 fill-neon-purple text-neon-purple" />
-             </button>
            </div>
         </div>
       </main>

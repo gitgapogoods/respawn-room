@@ -34,6 +34,11 @@ export default defineSchema({
       tiktok: v.string(),
       instagram: v.string(),
     })),
+    lightingConfig: v.optional(v.array(v.object({
+      name: v.string(),
+      hex: v.string(),
+      description: v.string(),
+    }))),
   }).index("by_status", ["status"])
     .index("by_user", ["userId"])
     .index("by_competition", ["inCompetition", "voteCount"]),

@@ -278,7 +278,12 @@ export const processSetup = action({
           socialCaptions: {
             tiktok: `Finally respawned my setup into the future. 🌃✨ #SetupWars #${setup.style.replace(' ', '')} #GamerRoom`,
             instagram: `From dungeon to ${setup.style} command center. Rate the new loadout 1-10! 🕹️🔥`,
-          }
+          },
+          lightingConfig: [
+            { name: "Primary Neon", hex: styleKey.includes('cyber') ? "#00F3FF" : styleKey.includes('retro') ? "#FF00FF" : "#FFFFFF", description: "Main accent lighting for your back wall and desk edge." },
+            { name: "Secondary Glow", hex: styleKey.includes('cyber') ? "#BC13FE" : styleKey.includes('sci-fi') ? "#00D1FF" : "#444444", description: "Soft fill light to reduce eye strain and add depth." },
+            { name: "Ambient Wash", hex: styleKey.includes('cozy') ? "#FDBA74" : "#1A1A1A", description: "Floor-level lighting to ground the setup's aesthetic." }
+          ]
         });
         return null;
       } catch (error) {
@@ -303,7 +308,12 @@ export const processSetup = action({
       socialCaptions: {
         tiktok: `Finally respawned my setup into the future. 🌃✨ #SetupWars #${setup.style.replace(' ', '')} #GamerRoom`,
         instagram: `From dungeon to ${setup.style} command center. Rate the new loadout 1-10! 🕹️🔥`,
-      }
+      },
+      lightingConfig: [
+        { name: "Primary Neon", hex: styleKey.includes('cyber') ? "#00F3FF" : styleKey.includes('retro') ? "#FF00FF" : "#FFFFFF", description: "Main accent lighting for your back wall and desk edge." },
+        { name: "Secondary Glow", hex: styleKey.includes('cyber') ? "#BC13FE" : styleKey.includes('sci-fi') ? "#00D1FF" : "#444444", description: "Soft fill light to reduce eye strain and add depth." },
+        { name: "Ambient Wash", hex: styleKey.includes('cozy') ? "#FDBA74" : "#1A1A1A", description: "Floor-level lighting to ground the setup's aesthetic." }
+      ]
     });
 
     return null;
@@ -332,6 +342,11 @@ export const completeSetup = internalMutation({
       tiktok: v.string(),
       instagram: v.string(),
     }),
+    lightingConfig: v.optional(v.array(v.object({
+      name: v.string(),
+      hex: v.string(),
+      description: v.string(),
+    }))),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -340,6 +355,7 @@ export const completeSetup = internalMutation({
       analysis: args.analysis,
       socialCaptions: args.socialCaptions,
       wallpaperImageId: args.wallpaperImageId,
+      lightingConfig: args.lightingConfig,
     });
     return null;
   },
