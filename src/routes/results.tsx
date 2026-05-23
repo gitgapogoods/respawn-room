@@ -43,7 +43,10 @@ function ResultsPage() {
   const [copied, setCopied] = useState<string | null>(null)
 
   const enterArena = useMutation(api.competitions.enterCompetition)
+  const addToWishlist = useMutation(api.wishlist.addToWishlist)
+  const { data: wishlist } = (useSuspenseQuery as any)(convexQuery((api as any).wishlist.listWishlist, {}))
   const [enteringArena, setEnteringArena] = useState(false)
+  const [savingWishlist, setSavingWishlist] = useState<string | null>(null)
   const navigate = useNavigate()
 
   if (!setup) {
@@ -326,32 +329,68 @@ function ResultsPage() {
               </div>
               
               <div className="space-y-6">
-                {analysis.recommendations.map((item: any, i: number) => (
-                  <div key={i} className="group p-4 bg-white/5 rounded-2xl border border-transparent hover:border-neon-cyan/20 transition-all">
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-2 py-0.5 bg-black/40 rounded">{item.category}</span>
-                      <span className="text-neon-cyan font-bold">{item.price}</span>
+                {analysis.recommendations.map((item: any, i: number) => {
+                  const isInWishlist = wishlist?.some((w: any) => w.link === item.link)
+
+                  const handleSaveItem = async () => {
+                    if (isInWishlist) return
+                    setSavingWishlist(item.link)
+                    try {
+                      await addToWishlist({
+                        item: item.item,
+                        category: item.category,
+                        price: item.price,
+                        link: item.link,
+                        source: item.source,
+                        setupId: setupId
+                      })
+                    } catch (err: any) {
+                      alert(err.message)
+                    } finally {
+                      setSavingWishlist(null)
+                    }
+                  }
+
+                  return (
+                    <div key={i} className="group p-4 bg-white/5 rounded-2xl border border-transparent hover:border-neon-cyan/20 transition-all">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-2 py-0.5 bg-black/40 rounded">{item.category}</span>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={handleSaveItem}
+                            disabled={isInWishlist || savingWishlist === item.link}
+                            className={`p-1.5 rounded-lg border transition-all ${
+                              isInWishlist
+                              ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan'
+                              : 'bg-white/5 border-white/10 text-gray-500 hover:text-white hover:border-white/20'
+                            }`}
+                          >
+                            {savingWishlist === item.link ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                          </button>
+                          <span className="text-neon-cyan font-bold">{item.price}</span>
+                        </div>
+                      </div>
+                      <div className="text-white font-bold mb-1">{item.item}</div>
+                      {item.why && (
+                        <p className="text-[10px] text-gray-500 italic mb-4 leading-relaxed line-clamp-2 group-hover:line-clamp-none transition-all">
+                          "{item.why}"
+                        </p>
+                      )}
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-full py-2 font-bold text-xs uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${
+                          item.link.includes('amazon.com')
+                          ? 'bg-[#FF9900]/10 hover:bg-[#FF9900] text-[#FF9900] hover:text-black border border-[#FF9900]/20'
+                          : 'bg-neon-cyan/10 hover:bg-neon-cyan text-neon-cyan hover:text-black border border-neon-cyan/20'
+                        }`}
+                      >
+                        <ShoppingCart className="w-3 h-3" /> {item.link.includes('amazon.com') ? 'View on Amazon' : 'Shop Gapo Goods'}
+                      </a>
                     </div>
-                    <div className="text-white font-bold mb-1">{item.item}</div>
-                    {item.why && (
-                      <p className="text-[10px] text-gray-500 italic mb-4 leading-relaxed line-clamp-2 group-hover:line-clamp-none transition-all">
-                        "{item.why}"
-                      </p>
-                    )}
-                    <a 
-                      href={item.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className={`w-full py-2 font-bold text-xs uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${
-                        item.link.includes('amazon.com') 
-                        ? 'bg-[#FF9900]/10 hover:bg-[#FF9900] text-[#FF9900] hover:text-black border border-[#FF9900]/20' 
-                        : 'bg-neon-cyan/10 hover:bg-neon-cyan text-neon-cyan hover:text-black border border-neon-cyan/20'
-                      }`}
-                    >
-                      <ShoppingCart className="w-3 h-3" /> {item.link.includes('amazon.com') ? 'View on Amazon' : 'Shop Gapo Goods'}
-                    </a>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
               
               <button 

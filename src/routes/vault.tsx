@@ -11,13 +11,19 @@ import {
   Layout,
   User,
   LogOut,
-  Trophy
+  Trophy,
+  ShoppingCart,
+  ShoppingBag,
+  Trash2,
+  ExternalLink,
+  Loader2
 } from 'lucide-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { useConvexAuth, useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { useAuthActions } from '@convex-dev/auth/react'
+import { useState } from 'react'
 
 export const Route = createFileRoute('/vault')({
   component: VaultPage,
@@ -52,7 +58,10 @@ function VaultPage() {
 
 function VaultContent({ signOut }: { signOut: () => void }) {
   const { data: setups } = useSuspenseQuery(convexQuery(api.setups.listUserSetups, {}))
+  const { data: wishlist } = useSuspenseQuery(convexQuery(api.wishlist.listWishlist, {}))
   const enterCompetition = useMutation((api as any).competitions.enterCompetition)
+  const removeFromWishlist = useMutation(api.wishlist.removeFromWishlist)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   const stats = {
     totalEvolutions: setups.length,
@@ -74,6 +83,17 @@ function VaultContent({ signOut }: { signOut: () => void }) {
       alert("MISSION SUCCESS: Entry registered in Setup Arena.")
     } catch (err: any) {
       alert(err.message)
+    }
+  }
+
+  const handleRemoveFromWishlist = async (id: any) => {
+    setRemovingId(id)
+    try {
+      await removeFromWishlist({ wishlistId: id })
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -165,95 +185,141 @@ function VaultContent({ signOut }: { signOut: () => void }) {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6 border-b border-white/5 pb-8">
-          <div>
-            <h2 className="font-orbitron text-2xl font-black text-white italic uppercase tracking-widest">
-              MISSION <span className="text-neon-cyan">LOGS</span>
-            </h2>
-          </div>
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-12 gap-12">
           
-          <Link to="/redesign" className="px-8 py-4 bg-neon-cyan text-black hover:bg-white rounded-2xl flex items-center gap-3 text-xs font-black uppercase tracking-widest transition-all group shadow-[0_0_20px_rgba(0,243,255,0.2)]">
-            <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" /> Initiate New Scan
-          </Link>
-        </div>
+          {/* Left: Mission Logs */}
+          <div className="lg:col-span-8">
+            <div className="flex items-end justify-between mb-8 pb-4 border-b border-white/5">
+              <h2 className="font-orbitron text-xl font-black text-white italic uppercase tracking-widest flex items-center gap-3">
+                MISSION <span className="text-neon-cyan text-shadow-glow">LOGS</span>
+              </h2>
+            </div>
 
-        {setups.length === 0 ? (
-           <div className="py-32 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[3rem] bg-dark-card/30">
-              <Layout className="w-16 h-16 text-gray-700 mb-6" />
-              <h3 className="text-xl font-bold text-white mb-2 uppercase italic font-orbitron">No Data Found in Sector 7</h3>
-              <p className="text-gray-500 text-sm font-bold uppercase tracking-widest mb-8">Initiate your first scan to see results here.</p>
-              <Link to="/redesign" className="px-10 py-5 bg-neon-cyan text-black font-orbitron font-black text-sm uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(0,243,255,0.2)]">
-                Start Quest
-              </Link>
-           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {setups.map((setup) => (
-              <Link 
-                key={setup._id} 
-                to="/results" 
-                search={{ setupId: setup._id }}
-                className="group relative flex flex-col bg-dark-card border border-white/5 rounded-[2rem] overflow-hidden hover:border-neon-cyan/30 hover:shadow-[0_0_30px_rgba(0,243,255,0.1)] transition-all"
-              >
-                <div className="aspect-video relative overflow-hidden">
-                  <img 
-                    src={setup.resultImageUrl || setup.originalImageUrl || ""} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-dark-bg via-transparent to-transparent opacity-60" />
-                  
-                  {setup.analysis?.rating && (
-                    <div className="absolute top-4 left-4 px-3 py-1 bg-neon-cyan text-black rounded-lg font-orbitron font-black italic text-sm shadow-lg">
-                      {setup.analysis.rating}
+            {setups.length === 0 ? (
+               <div className="py-24 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[3rem] bg-dark-card/30">
+                  <Layout className="w-12 h-12 text-gray-700 mb-6" />
+                  <h3 className="text-lg font-bold text-white mb-2 uppercase italic font-orbitron text-center">No Data in Sector 7</h3>
+                  <Link to="/redesign" className="px-8 py-4 bg-neon-cyan text-black font-orbitron font-black text-[10px] uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-xl mt-4">
+                    Start First Quest
+                  </Link>
+               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {setups.map((setup) => (
+                  <Link 
+                    key={setup._id} 
+                    to="/results" 
+                    search={{ setupId: setup._id }}
+                    className="group relative flex flex-col bg-dark-card border border-white/5 rounded-[2rem] overflow-hidden hover:border-neon-cyan/30 hover:shadow-[0_0_30px_rgba(0,243,255,0.05)] transition-all"
+                  >
+                    <div className="aspect-video relative overflow-hidden">
+                      <img 
+                        src={setup.resultImageUrl || setup.originalImageUrl || ""} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-dark-bg via-transparent to-transparent opacity-60" />
+                      
+                      {setup.analysis?.rating && (
+                        <div className="absolute top-4 left-4 px-3 py-1 bg-neon-cyan text-black rounded-lg font-orbitron font-black italic text-xs shadow-lg">
+                          {setup.analysis.rating}
+                        </div>
+                      )}
+
+                      <div className={`absolute top-4 right-4 px-3 py-1 rounded-lg font-black text-[8px] uppercase tracking-widest ${
+                        setup.status === 'completed' ? 'bg-black/60 text-neon-cyan border border-neon-cyan/30 backdrop-blur-md' : 'bg-neon-purple text-white animate-pulse'
+                      }`}>
+                        {setup.status === 'completed' ? 'SECURED' : 'SYNCING'}
+                      </div>
                     </div>
-                  )}
 
-                  <div className={`absolute top-4 right-4 px-3 py-1 rounded-lg font-black text-[8px] uppercase tracking-widest ${
-                    setup.status === 'completed' ? 'bg-black/60 text-neon-cyan border border-neon-cyan/30 backdrop-blur-md' : 'bg-neon-purple text-white animate-pulse'
-                  }`}>
-                    {setup.status === 'completed' ? 'SECURED' : 'SYNCING'}
-                  </div>
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-2">
+                         <span className="text-[8px] font-black uppercase tracking-[0.2em] text-neon-purple italic">{setup.style} Class</span>
+                         <div className="flex items-center gap-1 text-gray-500 text-[8px] font-black uppercase tracking-widest">
+                            <Clock className="w-2 h-2" /> {new Date(setup._creationTime).toLocaleDateString()}
+                         </div>
+                      </div>
+                      <h3 className="text-white font-black uppercase italic tracking-tight truncate group-hover:text-neon-cyan transition-colors">{setup.games || 'Unnamed Mission'}</h3>
+                      
+                      <div className="mt-6 flex items-center justify-between gap-4">
+                         <div className="text-[8px] font-black uppercase tracking-widest text-gray-600">
+                            Rep: <span className="text-white">{setup.voteCount || 0}</span>
+                         </div>
+                         <div className="flex items-center gap-2">
+                            {setup.status === 'completed' && !setup.inCompetition && (
+                              <button 
+                                onClick={(e) => handleEnterCompetition(e, setup._id)}
+                                className="px-3 py-2 bg-neon-purple/10 hover:bg-neon-purple text-neon-purple hover:text-white rounded-xl text-[8px] font-black uppercase tracking-widest border border-neon-purple/30 transition-all"
+                              >
+                                Enter Arena
+                              </button>
+                            )}
+                            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-neon-cyan group-hover:bg-neon-cyan group-hover:text-black transition-all">
+                               <ArrowRight className="w-4 h-4" />
+                            </div>
+                         </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right: Saved Loot / Wishlist */}
+          <div className="lg:col-span-4">
+             <div className="flex items-end justify-between mb-8 pb-4 border-b border-white/5">
+                <h2 className="font-orbitron text-xl font-black text-white italic uppercase tracking-widest flex items-center gap-3">
+                  SAVED <span className="text-neon-purple text-shadow-glow">LOOT</span>
+                </h2>
+                <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                  Items: {wishlist.length}
                 </div>
+             </div>
 
-                <div className="p-6 flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                       <span className="text-[8px] font-black uppercase tracking-[0.2em] text-neon-purple italic">{setup.style} Class</span>
-                       <div className="flex items-center gap-1 text-gray-500 text-[8px] font-black uppercase tracking-widest">
-                          <Clock className="w-2 h-2" /> {new Date(setup._creationTime).toLocaleDateString()}
+             <div className="space-y-4">
+                {wishlist.length === 0 ? (
+                  <div className="p-8 border-2 border-dashed border-white/5 rounded-3xl bg-dark-card/30 text-center">
+                    <ShoppingCart className="w-8 h-8 text-gray-800 mx-auto mb-4" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Wishlist manifest is empty</p>
+                  </div>
+                ) : (
+                  wishlist.map((item: any) => (
+                    <div key={item._id} className="p-4 bg-dark-card rounded-2xl border border-white/5 group hover:border-neon-purple/20 transition-all relative overflow-hidden">
+                       <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                         <ShoppingBag className="w-12 h-12 text-neon-purple" />
+                       </div>
+                       
+                       <div className="flex items-start justify-between mb-2">
+                         <span className="text-[8px] font-black uppercase tracking-widest text-gray-500 px-2 py-0.5 bg-black/40 rounded">{item.category}</span>
+                         <span className="text-neon-purple font-black text-xs">{item.price}</span>
+                       </div>
+                       
+                       <h4 className="text-white font-bold text-sm mb-4 line-clamp-1">{item.item}</h4>
+                       
+                       <div className="flex items-center gap-2">
+                         <a 
+                           href={item.link}
+                           target="_blank"
+                           className="flex-1 py-2 bg-neon-purple/10 hover:bg-neon-purple text-neon-purple hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all text-center flex items-center justify-center gap-2"
+                         >
+                           View <ExternalLink className="w-3 h-3" />
+                         </a>
+                         <button 
+                           onClick={() => handleRemoveFromWishlist(item._id)}
+                           disabled={removingId === item._id}
+                           className="w-10 h-10 bg-white/5 hover:bg-red-500/20 text-gray-500 hover:text-red-500 rounded-lg flex items-center justify-center transition-all border border-white/5"
+                         >
+                           {removingId === item._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                         </button>
                        </div>
                     </div>
-                    <h3 className="text-white font-black uppercase italic tracking-tight truncate text-lg group-hover:text-neon-cyan transition-colors">{setup.games || 'Unnamed Mission'}</h3>
-                  </div>
-                  
-                  <div className="mt-6 flex items-center justify-between gap-4">
-                     <div className="text-[10px] font-black uppercase tracking-widest text-gray-600">
-                        Total Rep: <span className="text-white">{setup.voteCount || 0}</span>
-                     </div>
-                     <div className="flex items-center gap-2">
-                        {setup.status === 'completed' && !setup.inCompetition && (
-                          <button 
-                            onClick={(e) => handleEnterCompetition(e, setup._id)}
-                            className="px-3 py-2 bg-neon-purple/10 hover:bg-neon-purple text-neon-purple hover:text-white rounded-xl text-[8px] font-black uppercase tracking-widest border border-neon-purple/30 transition-all flex items-center gap-2"
-                          >
-                            <Flame className="w-2 h-2" /> Enter Arena
-                          </button>
-                        )}
-                        {setup.inCompetition && (
-                          <div className="px-3 py-2 bg-neon-cyan/10 text-neon-cyan rounded-xl text-[8px] font-black uppercase tracking-widest border border-neon-cyan/30 flex items-center gap-1">
-                            <Trophy className="w-2 h-2" /> Arena Active
-                          </div>
-                        )}
-                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-neon-cyan group-hover:bg-neon-cyan group-hover:text-black group-hover:border-neon-cyan transition-all">
-                           <ArrowRight className="w-5 h-5" />
-                        </div>
-                     </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                  ))
+                )}
+             </div>
           </div>
-        )}
+        </div>
       </main>
 
       {/* Vault Footer */}

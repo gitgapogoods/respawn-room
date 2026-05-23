@@ -59,4 +59,15 @@ export default defineSchema({
     setupId: v.id("setups"),
   }).index("by_user_and_setup", ["userId", "setupId"])
     .index("by_setup", ["setupId"]),
+
+  wishlist: defineTable({
+    userId: v.id("users"),
+    item: v.string(),
+    category: v.string(),
+    price: v.string(),
+    link: v.string(),
+    source: v.optional(v.string()),
+    setupId: v.optional(v.id("setups")),
+  }).index("by_user", ["userId"])
+    .index("by_user_and_link", ["userId", "link"]),
 });
