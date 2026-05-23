@@ -255,8 +255,33 @@ export const processSetup = action({
         const { roomAnalyst } = await import("./agent");
         
         const response = await (roomAnalyst as any).chat(ctx, {
-          message: `Analyze this setup: Style: ${setup.style}, Budget: ${setup.budget}, Games: ${setup.games}, Platform: ${setup.platform}. Original Image URL: ${setup.originalImageUrl}. Items being recommended: ${recommendations.map(r => r.item).join(", ")}. Please explain why each item fits this specific user's profile.`,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Analyze this setup: Style: ${setup.style}, Budget: ${setup.budget}, Games: ${setup.games}, Platform: ${setup.platform}. Items being recommended: ${recommendations.map(r => r.item).join(", ")}. 
+                  
+                  MISSION CRITICAL:
+                  1. Scan the provided image for specific hardware (brands, models, types).
+                  2. At the very end of your response, include a single line: "SCANNED_HARDWARE: [Item 1], [Item 2], [Item 3]"
+                  3. Ensure the roast and recommendations reference these specific items.`
+                },
+                {
+                  type: "image",
+                  image: setup.originalImageUrl
+                }
+              ]
+            }
+          ]
         });
+
+        // Parse scanned hardware
+        const hardwareLine = response.text.split('\n').find((l: string) => l.includes('SCANNED_HARDWARE:'));
+        const scannedHardware = hardwareLine 
+          ? hardwareLine.replace('SCANNED_HARDWARE:', '').split(',').map((s: string) => s.trim().replace(/[\[\]]/g, ''))
+          : [];
 
         const wallpaperImageId = await ctx.runAction(internal.setups.generateWallpaperAction, {
           style: setup.style
@@ -266,9 +291,10 @@ export const processSetup = action({
           setupId: args.setupId,
           analysis: {
             rating: response.text.includes('S-Rank') ? 'S-Rank' : 'A-Rank',
-            feedback: response.text,
+            feedback: response.text.split('SCANNED_HARDWARE:')[0].trim(),
             roast: response.text.split('\n')[0],
             totalCost: totalCost,
+            scannedHardware,
             recommendations: recommendations.map(r => ({
               ...r,
               why: r.why || "This item was selected by our AI to perfectly match your setup's specific needs and gaming style."

@@ -21,6 +21,7 @@ export default defineSchema({
       feedback: v.string(),
       roast: v.optional(v.string()),
       totalCost: v.optional(v.string()),
+      scannedHardware: v.optional(v.array(v.string())),
       recommendations: v.array(v.object({
         category: v.string(),
         item: v.string(),

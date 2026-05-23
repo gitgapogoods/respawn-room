@@ -15,7 +15,8 @@ import {
   Check,
   ArrowRight,
   Flame,
-  ThumbsUp
+  ThumbsUp,
+  Search
 } from 'lucide-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
@@ -240,6 +241,23 @@ function ResultsPage() {
                  "{analysis.feedback}"
                </p>
             </div>
+
+            {/* AI Asset Scan Section */}
+            {analysis.scannedHardware && analysis.scannedHardware.length > 0 && (
+              <div className="p-8 bg-dark-card rounded-3xl border border-white/5 relative overflow-hidden group">
+                 <h3 className="font-orbitron text-sm font-black text-neon-cyan mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
+                   <Search className="w-4 h-4" /> AI ASSET SCAN
+                 </h3>
+                 <div className="flex flex-wrap gap-3">
+                    {analysis.scannedHardware.map((item: string, i: number) => (
+                      <div key={i} className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-gray-300 flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 rounded-full bg-neon-cyan animate-pulse" />
+                         {item}
+                      </div>
+                    ))}
+                 </div>
+              </div>
+            )}
 
             {/* AI Roast Mode Section */}
             {analysis.roast && (
