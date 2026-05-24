@@ -5,7 +5,8 @@ import {
   ThumbsUp,
   Search,
   User,
-  Zap
+  Zap,
+  Trophy
 } from 'lucide-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'

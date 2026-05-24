@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Flame,
   ThumbsUp,
-  Search
+  Search,
+  Plus
 } from 'lucide-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
@@ -44,7 +45,7 @@ function ResultsPage() {
   const [copied, setCopied] = useState<string | null>(null)
 
   const enterArena = useMutation(api.competitions.enterCompetition)
-  const addToWishlist = useMutation(api.wishlist.addToWishlist)
+  const addToWishlist = useMutation((api as any).wishlist.addToWishlist)
   const { data: wishlist } = (useSuspenseQuery as any)(convexQuery((api as any).wishlist.listWishlist, {}))
   const [enteringArena, setEnteringArena] = useState(false)
   const [savingWishlist, setSavingWishlist] = useState<string | null>(null)

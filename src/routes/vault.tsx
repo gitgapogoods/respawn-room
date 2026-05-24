@@ -1,11 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { 
   ArrowRight,
-  Flame,
   ThumbsUp,
   Sparkles,
   Gamepad2,
-  Plus,
   Clock,
   Lock,
   Layout,
@@ -58,9 +56,9 @@ function VaultPage() {
 
 function VaultContent({ signOut }: { signOut: () => void }) {
   const { data: setups } = useSuspenseQuery(convexQuery(api.setups.listUserSetups, {}))
-  const { data: wishlist } = useSuspenseQuery(convexQuery(api.wishlist.listWishlist, {}))
+  const { data: wishlist } = (useSuspenseQuery as any)(convexQuery((api as any).wishlist.listWishlist, {}))
   const enterCompetition = useMutation((api as any).competitions.enterCompetition)
-  const removeFromWishlist = useMutation(api.wishlist.removeFromWishlist)
+  const removeFromWishlist = useMutation((api as any).wishlist.removeFromWishlist)
   const [removingId, setRemovingId] = useState<string | null>(null)
 
   const stats = {
