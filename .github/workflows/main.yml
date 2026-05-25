@@ -1,0 +1,1 @@
+git add . && git commit -m "Fix: Reorganize project and add build patching" && git push
