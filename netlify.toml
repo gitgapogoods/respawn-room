@@ -1,0 +1,9 @@
+[build]
+  command = "vite build"
+  publish = "dist"
+
+# Single-page-app fallback: every route is served by the client bundle.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
