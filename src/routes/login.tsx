@@ -24,7 +24,8 @@ function LoginPage() {
       await signIn('email', { email })
       setStep('otp')
     } catch (err) {
-      setError('System Failure: Could not transmit magic link. Check your comms.')
+      const detail = err instanceof Error ? err.message : String(err)
+      setError(`System Failure: Could not transmit access code. ${detail}`)
     } finally {
       setLoading(false)
     }
@@ -38,7 +39,8 @@ function LoginPage() {
       await signIn('email', { email, code })
       navigate({ to: '/redesign' })
     } catch (err) {
-      setError('Invalid Access Code: Tactical sync failed.')
+      const detail = err instanceof Error ? err.message : String(err)
+      setError(`Invalid Access Code: Tactical sync failed. ${detail}`)
     } finally {
       setLoading(false)
     }
