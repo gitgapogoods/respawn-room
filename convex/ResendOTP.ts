@@ -43,6 +43,14 @@ export const ResendOTP = Resend({
           "AUTH_EMAIL to an address on your verified domain (e.g. " +
           '"Respawn Room <noreply@yourdomain.com>").',
       );
+    } else if (!/@.+\..+/.test(from)) {
+      // AUTH_EMAIL is set but doesn't contain a real email address. Resend
+      // would otherwise reject this with an opaque error, so be explicit.
+      throw new Error(
+        `AUTH_EMAIL is set to "${from}", which is not a valid sender ` +
+          'address. Use a bare email ("noreply@yourdomain.com") or the ' +
+          '"Name <email@yourdomain.com>" form, on a domain verified in Resend.',
+      );
     }
 
     const resend = new ResendAPI(provider.apiKey);
@@ -53,19 +61,41 @@ export const ResendOTP = Resend({
       text: `Your access code is ${token}\n\nEnter it in the app to sync into your setup vault.`,
     });
     if (error) {
-      // Resend returns a 403 for test-sender sends to non-account emails.
-      // Surface an actionable message instead of the raw JSON payload.
-      const detail =
+      // Resend's error is `{ name, message, statusCode }`. Surface all of it
+      // (instead of just the raw payload) so the cause is unambiguous.
+      const name =
+        typeof error === "object" && error !== null && "name" in error
+          ? String((error as { name: unknown }).name)
+          : "";
+      const message =
         typeof error === "object" && error !== null && "message" in error
           ? String((error as { message: unknown }).message)
           : JSON.stringify(error);
+      const detail = name ? `${name}: ${message}` : message;
+
       const usingTestSender = from.includes("onboarding@resend.dev");
+      // The most common post-setup failure: AUTH_EMAIL points at a domain that
+      // is not actually verified in *this* Resend account (e.g. it was added
+      // but not verified, or the env var was set on Netlify instead of in the
+      // Convex deployment where this code runs). Resend reports this with a
+      // `validation_error` / 403 mentioning the domain.
+      const domainNotVerified =
+        /not.*(verified|allowed)|verify a domain|domain is not/i.test(message);
+
       if (usingTestSender) {
         throw new Error(
           `${detail} — verification email is being sent from the Resend ` +
-            "test sender. Set AUTH_EMAIL in your Convex deployment to an " +
-            "address on a domain you've verified in Resend to send to any " +
-            "recipient.",
+            "test sender (onboarding@resend.dev), which means AUTH_EMAIL is " +
+            "not visible to this Convex function. Set AUTH_EMAIL in the " +
+            "Convex deployment (npx convex env set AUTH_EMAIL ...), not in " +
+            "Netlify, to an address on a domain you've verified in Resend.",
+        );
+      }
+      if (domainNotVerified) {
+        throw new Error(
+          `${detail} — the "from" address (${from}) uses a domain that is ` +
+            "not verified in this Resend account. Verify that exact domain in " +
+            "Resend, and make sure AUTH_EMAIL in the Convex deployment uses it.",
         );
       }
       throw new Error(detail);
