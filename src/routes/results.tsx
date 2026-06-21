@@ -47,6 +47,7 @@ function ResultsPage() {
   const enterArena = useMutation(api.competitions.enterCompetition)
   const addToWishlist = useMutation((api as any).wishlist.addToWishlist)
   const { data: wishlist } = (useSuspenseQuery as any)(convexQuery((api as any).wishlist.listWishlist, {}))
+  const { data: activeChallenge } = (useSuspenseQuery as any)(convexQuery((api as any).competitions.getActiveChallenge, {}))
   const [enteringArena, setEnteringArena] = useState(false)
   const [savingWishlist, setSavingWishlist] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -127,7 +128,6 @@ function ResultsPage() {
     setTimeout(() => setCopied(null), 2000)
   }
 
-  const { data: activeChallenge } = (useSuspenseQuery as any)(convexQuery((api as any).competitions.getActiveChallenge, {}))
   const handleEnterArena = async () => {
     setEnteringArena(true)
     try {
