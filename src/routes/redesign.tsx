@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Upload, Gamepad2, Monitor, Maximize2, Sparkles, ChevronLeft, Check, Wand2, Lock } from 'lucide-react'
 import { useMutation, useConvexAuth } from 'convex/react'
 import { api } from '../../convex/_generated/api'
@@ -10,13 +10,40 @@ export const Route = createFileRoute('/redesign')({
 
 type Step = 'upload' | 'preferences' | 'processing'
 
+// Key used to stash an in-progress redesign while the user signs in, so the
+// uploaded image and form selections survive the round-trip to /login instead
+// of dropping the user back at the empty upload step.
+const DRAFT_KEY = 'respawn:redesign-draft'
+
+type RedesignDraft = {
+  preview: string
+  fileName: string
+  fileType: string
+  preferences: {
+    games: string
+    vibe: string
+    budget: string
+    platform: string
+  }
+}
+
+// Rebuild a File from the base64 preview so we can upload it after the user
+// returns from authenticating (the original File object is lost on navigation).
+function dataUrlToFile(dataUrl: string, fileName: string, fileType: string): File {
+  const base64 = dataUrl.split(',')[1] ?? ''
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new File([bytes], fileName, { type: fileType })
+}
+
 function RedesignPage() {
   const { isAuthenticated, isLoading } = useConvexAuth()
   const [step, setStep] = useState<Step>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const navigate = useNavigate()
-  
+
   const generateUploadUrl = useMutation(api.setups.generateUploadUrl)
   const createSetup = useMutation(api.setups.createSetup)
 
@@ -27,6 +54,25 @@ function RedesignPage() {
     budget: 'mid-tier',
     platform: 'pc',
   })
+
+  // After the user comes back from /login authenticated, restore the redesign
+  // they were working on so they continue from the form instead of starting over.
+  useEffect(() => {
+    if (isLoading || !isAuthenticated) return
+    const raw = sessionStorage.getItem(DRAFT_KEY)
+    if (!raw) return
+    sessionStorage.removeItem(DRAFT_KEY)
+    try {
+      const draft = JSON.parse(raw) as RedesignDraft
+      setPreferences(draft.preferences)
+      setPreview(draft.preview)
+      setFile(dataUrlToFile(draft.preview, draft.fileName, draft.fileType))
+      setStep('preferences')
+    } catch {
+      // Corrupt draft — ignore and let the user start fresh.
+    }
+  }, [isLoading, isAuthenticated])
+
 
   const styles = [
     { id: 'cyberpunk', name: 'Cyberpunk', icon: '🏙️', img: 'https://i.pinimg.com/736x/2a/36/b0/2a36b00de204310d67ae66c6404ea6d7.jpg' },
@@ -53,8 +99,23 @@ function RedesignPage() {
 
   const handleStartTransformation = async () => {
     if (!file) return
-    
+
     if (!isAuthenticated) {
+      // Preserve the upload + form selections across the sign-in round-trip so
+      // the user lands back on the form instead of an empty upload step.
+      if (preview) {
+        const draft: RedesignDraft = {
+          preview,
+          fileName: file.name,
+          fileType: file.type,
+          preferences,
+        }
+        try {
+          sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+        } catch {
+          // Storage full/unavailable — fall through and just send them to login.
+        }
+      }
       navigate({ to: '/login' })
       return
     }
