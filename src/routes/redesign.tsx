@@ -51,13 +51,11 @@ function RedesignPage() {
     }
   }
 
-  const handleStartTransformation = async () => {
+  const handleStartTransformation = async (e?: React.FormEvent | React.MouseEvent) => {
+    // Guard against any default form submission / page reload during the transition.
+    e?.preventDefault()
+
     if (!file) return
-    
-    if (!isAuthenticated) {
-      navigate({ to: '/login' })
-      return
-    }
 
     setStep('processing')
 
@@ -70,10 +68,14 @@ function RedesignPage() {
         method: "POST",
         headers: { "Content-Type": file.type },
         body: file,
-      });
-      const { storageId } = await result.json();
+      })
+      if (!result.ok) {
+        throw new Error("Upload failed")
+      }
+      const { storageId } = await result.json()
 
-      // 3. Create Setup record
+      // 3. Create Setup record. Auth is enforced server-side inside createSetup,
+      //    so we rely on that result rather than the client auth flag.
       const setupId = await createSetup({
         originalImageId: storageId,
         style: preferences.vibe,
@@ -82,12 +84,20 @@ function RedesignPage() {
         platform: preferences.platform,
       })
 
-      // 4. Navigate to results with setupId
-      navigate({ 
-        to: '/results', 
-        search: { setupId } 
+      // 4. Navigate to the results page for the newly created submission.
+      navigate({
+        to: '/results',
+        search: { setupId },
       })
     } catch (error) {
+      // Only fall back to /login when the server actually reports an auth failure.
+      // This avoids bouncing a freshly-authenticated pilot back to /login on a
+      // transient client auth-state race — the cause of the post-upload "loop".
+      const message = error instanceof Error ? error.message : String(error)
+      if (/sign(ed)? in|unauthenticated|not authenticated|unauthorized/i.test(message)) {
+        navigate({ to: '/login' })
+        return
+      }
       console.error("Transformation failed:", error)
       setStep('preferences')
       alert("Quest Failed: Could not connect to the Respawn Server. Try again later.")
