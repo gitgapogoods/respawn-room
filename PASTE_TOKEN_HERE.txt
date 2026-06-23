@@ -1,3 +1,0 @@
-PASTE_YOUR_GITHUB_TOKEN_HERE
-(It looks like ghp_xxxxxxxxxxxxxxxxxxxx)
-Then tell me "Done" in the chat.
