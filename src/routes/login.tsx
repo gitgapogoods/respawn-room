@@ -40,7 +40,15 @@ function LoginPage() {
       navigate({ to: '/redesign' })
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err)
-      setError(`Invalid Access Code: Tactical sync failed. ${detail}`)
+      // A missing deployment signing key (`JWT_PRIVATE_KEY` / `JWKS`) lets the
+      // code verify but fails when issuing the session token. That is a server
+      // config problem, not a wrong code — don't mislabel it as "Invalid".
+      const isServerConfig = /JWT_PRIVATE_KEY|JWKS|environment variable/i.test(detail)
+      setError(
+        isServerConfig
+          ? `Sync server offline: authentication keys are not configured. ${detail}`
+          : `Invalid Access Code: Tactical sync failed. ${detail}`,
+      )
     } finally {
       setLoading(false)
     }
