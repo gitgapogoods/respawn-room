@@ -93,11 +93,7 @@ function RouterError({ error }: { error: Error }) {
   )
 }
 
-export function getRouter() {
-  const convexUrl = (import.meta as any).env.VITE_CONVEX_URL
-  if (!convexUrl) {
-    throw new Error('VITE_CONVEX_URL is not configured')
-  }
+export function getRouter(convexUrl: string) {
   const convexQueryClient = new ConvexQueryClient(convexUrl)
 
   const queryClient: QueryClient = new QueryClient({
